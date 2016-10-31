@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"runtime"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -60,7 +62,7 @@ func (sf *StdFormatter) Format(e *Entry) ([]byte, error) {
 
 	// Normal headers.  time, file, etc
 	var header, message []byte
-	sf.stdHeader(&header, e.Time, e.Prefix, e.File, e.Line)
+	sf.stdHeader(&header, e.Time, e.Prefix, e.File, e.Line, e.Func)
 
 	// Level headers
 	headers := sf.levelHeaders()
@@ -103,7 +105,7 @@ func (sf *StdFormatter) ColorSupported(supp bool) {
 }
 
 // Adapted replica of log.Logger.formatHeader
-func (sf *StdFormatter) stdHeader(buf *[]byte, t time.Time, prefix, file string, line int) {
+func (sf *StdFormatter) stdHeader(buf *[]byte, t time.Time, prefix, file string, line int, fn string) {
 	*buf = append(*buf, prefix...)
 	if sf.Flag&(log.Ldate|log.Ltime|log.Lmicroseconds) != 0 {
 		if sf.Flag&log.Ldate != 0 {
@@ -142,9 +144,9 @@ func (sf *StdFormatter) stdHeader(buf *[]byte, t time.Time, prefix, file string,
 		}
 
 		if sf.Colors {
-			file = fmt.Sprintf("\x1b[1;30m%s:%d:\x1b[0m ", file, line)
+			file = fmt.Sprintf("\x1b[1;30m%s:%d %s:\x1b[0m ", file, line, fn)
 		} else {
-			file = fmt.Sprintf("%s:%d: ", file, line)
+			file = fmt.Sprintf("%s:%d %s: ", file, line, fn)
 		}
 
 		*buf = append(*buf, file...)
@@ -191,19 +193,30 @@ func (sf *StdFormatter) stdFields(buf *[]byte, f Fields, level Level) {
 }
 
 // get file a line where logger was called
-func getFileLine(calldepth int) (string, int) {
+func getFileLine(calldepth int) (string, int, string) {
 
 	var file string
 	var line int
+	var pc uintptr
+	var fn string
 
 	var ok bool
-	_, file, line, ok = runtime.Caller(calldepth)
+	pc, file, line, ok = runtime.Caller(calldepth)
 	if !ok {
 		file = "???"
 		line = 0
+		fn = "???"
+	} else {
+		fnp := runtime.FuncForPC(pc)
+		fn = strings.Join(strings.Split(fnp.Name(), ".")[1:], ".")
+		exp := regexp.MustCompile(`^\(\*([\w]+)\).([\w]+)$`)
+		mats := exp.FindStringSubmatch(fn)
+		if mats != nil && len(mats) == 3 {
+			fn = fmt.Sprintf("%s.%s", mats[1], mats[2])
+		}
 	}
 
-	return file, line
+	return file, line, fn
 }
 
 // Replica of log.Logger.itoa

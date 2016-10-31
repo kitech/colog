@@ -53,8 +53,9 @@ type Entry struct {
 	Prefix  string    // Prefix set to the logger
 	File    string    // file where the log was called
 	Line    int       // line in the file where the log was called
-	Message []byte    // logged message
-	Fields  Fields    // map of key-value data parsed from the message
+	Func    string
+	Message []byte // logged message
+	Fields  Fields // map of key-value data parsed from the message
 }
 
 // Level represents severity level
@@ -381,7 +382,7 @@ func (cl *CoLog) parse(p []byte) *Entry {
 
 	// this is a bit expensive, check is anyone might actually need it
 	if len(cl.hooks) != 0 || cl.formatter.Flags()&(log.Lshortfile|log.Llongfile) != 0 {
-		e.File, e.Line = getFileLine(5)
+		e.File, e.Line, e.Func = getFileLine(5)
 	}
 
 	return e
