@@ -35,6 +35,7 @@ type CoLog struct {
 	prefix       string
 	minLevel     Level
 	defaultLevel Level
+	showFunction bool
 	headers      HeaderMap
 	extractor    Extractor
 	formatter    Formatter
@@ -141,11 +142,12 @@ func NewCoLog(out io.Writer, prefix string, flags int) *CoLog {
 	cl := new(CoLog)
 	cl.minLevel = initialMinLevel
 	cl.defaultLevel = initialDefaultLevel
+	cl.showFunction = true
 	cl.hooks = make(hookPool)
 	cl.fixed = make(Fields)
 	cl.headers = defaultHeaders
 	cl.prefix = prefix
-	cl.formatter = &StdFormatter{Flag: flags}
+	cl.formatter = &StdFormatter{Flag: flags, showFunction: true}
 	cl.extractor = &StdExtractor{}
 	cl.SetOutput(out)
 	if host, err := os.Hostname(); err != nil {
@@ -532,4 +534,16 @@ func ParseLevel(level string) (Level, error) {
 	}
 
 	return unknown, fmt.Errorf("could not parse level %s", level)
+}
+
+// SetShowFunction sets show functin name in log
+func (cl *CoLog) SetShowFunction(show bool) {
+	cl.mu.Lock()
+	defer cl.mu.Unlock()
+
+	cl.showFunction = show
+}
+
+func SetShowFunction(show bool) {
+	std.SetShowFunction(show)
 }

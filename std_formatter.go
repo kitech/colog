@@ -41,6 +41,7 @@ type StdFormatter struct {
 	Colors         bool // Force enable colors
 	NoColors       bool // Force disable colors (has preference)
 	colorSupported bool
+	showFunction   bool
 }
 
 // Format takes and entry and returns the formatted output in bytes
@@ -141,6 +142,10 @@ func (sf *StdFormatter) stdHeader(buf *[]byte, t time.Time, prefix, file string,
 				}
 			}
 			file = short
+		}
+
+		if !sf.showFunction {
+			fn = "\b"
 		}
 
 		if sf.Colors {
