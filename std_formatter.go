@@ -214,7 +214,7 @@ func getFileLine(calldepth int) (string, int, string) {
 	} else {
 		fnp := runtime.FuncForPC(pc)
 		fn = strings.Join(strings.Split(fnp.Name(), ".")[1:], ".")
-		exp := regexp.MustCompile(`^\(\*([\w]+)\).([\w]+)$`)
+		exp := regexp.MustCompile(`^\(\*([\w]+)\).([\.\w]+)$`)
 		mats := exp.FindStringSubmatch(fn)
 		if mats != nil && len(mats) == 3 {
 			fn = fmt.Sprintf("%s.%s", mats[1], mats[2])
